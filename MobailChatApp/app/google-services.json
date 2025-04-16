@@ -2,7 +2,8 @@
   "project_info": {
     "project_number": "520463268798",
     "project_id": "chat-mobileapp-b05c2",
-    "storage_bucket": "chat-mobileapp-b05c2.firebasestorage.app"
+    "storage_bucket": "chat-mobileapp-b05c2.firebasestorage.app",
+    "firebase_url": "https://chat-mobileapp-b05c2-default-rtdb.europe-west1.firebasedatabase.app/"
   },
   "client": [
     {
