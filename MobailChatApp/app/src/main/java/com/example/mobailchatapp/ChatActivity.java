@@ -9,113 +9,103 @@ import android.widget.ImageButton;
 import android.view.View;
 import android.widget.LinearLayout;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.database.*;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 
 public class ChatActivity extends AppCompatActivity {
 
     private EditText messageEditText;
     private Button sendButton;
-    private LinearLayout messagesContainer;
+    private String userId;
+    private String username;
     private TextView usernameTextView;
-
-    private String currentUserId;
-    private String otherUserId;
-    private String chatId;
+    private LinearLayout messagesContainer; // Меняем тип с View на LinearLayout
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        // Инициализация элементов интерфейса
         messageEditText = findViewById(R.id.message_edit_text);
         sendButton = findViewById(R.id.send_button);
-        messagesContainer = findViewById(R.id.messages_container);
         usernameTextView = findViewById(R.id.username_text_view);
+        messagesContainer = findViewById(R.id.messages_container); // Теперь messagesContainer - LinearLayout
 
-        // Получаем ID текущего и другого пользователя
-        currentUserId = getIntent().getStringExtra("currentUserId");
-        otherUserId = getIntent().getStringExtra("otherUserId");
-        chatId = generateChatId(currentUserId, otherUserId);
+        userId = getIntent().getStringExtra("userId");
+        username = getIntent().getStringExtra("username");
+        usernameTextView.setText(username);
 
-        usernameTextView.setText("Чат с " + otherUserId);
+        // Прослушивание сообщений
+        listenForMessages(userId);
 
+        // Установка обработчика кнопки отправки сообщения
         sendButton.setOnClickListener(v -> {
             String message = messageEditText.getText().toString();
             if (!message.isEmpty()) {
-                sendMessage(message);
+                sendMessage(userId, message);
             }
         });
 
-        listenForMessages();
-        saveChatToUserChats();
+        // Обработчик кнопки выхода
+        ImageButton logoutButton = findViewById(R.id.logout_button);
+        logoutButton.setOnClickListener(v -> {
+            finish(); // Закрывает активити и возвращает в чат-лист
+        });
     }
 
-    // Генерация chatId по алфавиту (один и тот же ID у обоих)
-    private String generateChatId(String user1, String user2) {
-        return (user1.compareTo(user2) < 0) ? user1 + "_" + user2 : user2 + "_" + user1;
+    // Метод для отправки сообщения в Firebase
+    private void sendMessage(String userId, String message) {
+        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId).push();
+        messagesRef.setValue(new ChatMessage(message)); // Сохраняем сообщение как объект
+        messageEditText.setText(""); // Очищаем поле ввода
     }
 
-    private void sendMessage(String message) {
-        DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("messages");
-        String messageId = chatRef.push().getKey();
-
-        ChatMessage chatMessage = new ChatMessage(currentUserId, message);
-        if (messageId != null) {
-            chatRef.child(messageId).setValue(chatMessage);
-            messageEditText.setText("");
-        }
-    }
-
-    private void listenForMessages() {
-        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("messages");
+    // Метод для получения сообщений из Firebase и их отображения
+    private void listenForMessages(String userId) {
+        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId);
 
         messagesRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                messagesContainer.removeAllViews();
-                for (DataSnapshot messageSnapshot : snapshot.getChildren()) {
-                    ChatMessage message = messageSnapshot.getValue(ChatMessage.class);
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                messagesContainer.removeAllViews(); // Теперь это работает, так как messagesContainer - LinearLayout
+
+                // Итерация по всем сообщениям
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    ChatMessage message = snapshot.getValue(ChatMessage.class);
                     if (message != null) {
-                        addMessageToChat(message.getSenderId(), message.getMessage());
+                        addMessageToChat(message.getMessage());
                     }
                 }
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
-                Toast.makeText(ChatActivity.this, "Ошибка загрузки сообщений", Toast.LENGTH_SHORT).show();
+            public void onCancelled(DatabaseError databaseError) {
+                Toast.makeText(ChatActivity.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void addMessageToChat(String senderId, String messageText) {
-        TextView messageView = new TextView(this);
-        messageView.setText(senderId + ": " + messageText);
-        messagesContainer.addView(messageView);
+    // Метод для добавления сообщений в контейнер чата
+    private void addMessageToChat(String message) {
+        TextView messageTextView = new TextView(this);
+        messageTextView.setText(message);
+        messagesContainer.addView(messageTextView);
     }
 
-    // Добавляем чат в userChats, чтобы потом видеть список чатов
-    private void saveChatToUserChats() {
-        DatabaseReference userChatsRef = FirebaseDatabase.getInstance().getReference("userChats");
-
-        userChatsRef.child(currentUserId).child(chatId).setValue(true);
-        userChatsRef.child(otherUserId).child(chatId).setValue(true);
-    }
-
-    // Класс сообщения
-    public static class ChatMessage {
-        private String senderId;
+    // Класс для представления сообщения
+    private static class ChatMessage {
         private String message;
 
-        public ChatMessage() {}
+        public ChatMessage() {
 
-        public ChatMessage(String senderId, String message) {
-            this.senderId = senderId;
-            this.message = message;
         }
 
-        public String getSenderId() {
-            return senderId;
+        public ChatMessage(String message) {
+            this.message = message;
         }
 
         public String getMessage() {
