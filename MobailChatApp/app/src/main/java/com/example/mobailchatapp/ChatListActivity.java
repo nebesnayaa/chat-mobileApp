@@ -1,29 +1,28 @@
 package com.example.mobailchatapp;
 
+import android.content.Intent;
 import android.os.Bundle;
-import androidx.appcompat.widget.SearchView;
-
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import androidx.appcompat.widget.SearchView;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.mobailchatapp.R;
-
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
 import java.util.ArrayList;
 import java.util.List;
+import androidx.appcompat.widget.Toolbar;
+
 
 public class ChatListActivity extends AppCompatActivity {
 
@@ -34,6 +33,7 @@ public class ChatListActivity extends AppCompatActivity {
     private ChatAdapter adapter;
     private List<Chat> chatList = new ArrayList<>();
     private List<Chat> filteredList = new ArrayList<>();
+    private TextView toolbarTitle; // Для отображения логина пользователя в Toolbar
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +48,14 @@ public class ChatListActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Получаем ссылку на TextView для отображения логина пользователя в Toolbar
+        toolbarTitle = findViewById(R.id.toolbar_title);
+
+        // Получаем текущего пользователя из Firebase
+        String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        toolbarTitle.setText(userEmail); // Устанавливаем email пользователя в toolbar
+
+        // Настройка Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.app_name, R.string.app_name);
         drawerLayout.addDrawerListener(toggle);
@@ -55,13 +63,15 @@ public class ChatListActivity extends AppCompatActivity {
 
         navView.setNavigationItemSelectedListener(item -> {
             if (item.getItemId() == R.id.menu_settings) {
-                Toast.makeText(this, "Настройки", Toast.LENGTH_SHORT).show();
+                // Переход в экран настроек
+                Intent intent = new Intent(ChatListActivity.this, SettingActivity.class);
+                startActivity(intent);
             }
             drawerLayout.closeDrawers();
             return true;
         });
 
-        // Firebase: отримуємо список чатів
+        // Firebase: получаем список чатов
         DatabaseReference chatsRef = FirebaseDatabase.getInstance().getReference("chats");
 
         chatsRef.addValueEventListener(new ValueEventListener() {
@@ -81,18 +91,26 @@ public class ChatListActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(ChatListActivity.this, "Помилка завантаження чатів", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ChatListActivity.this, "Ошибка загрузки чатов", Toast.LENGTH_SHORT).show();
             }
         });
 
-        adapter = new ChatAdapter(filteredList);
+        adapter = new ChatAdapter(filteredList, chat -> {
+            // При выборе пользователя, открываем экран чата
+            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
+            intent.putExtra("userId", chat.getUserId());
+            startActivity(intent);
+        });
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override public boolean onQueryTextSubmit(String query) { return false; }
+            @Override
+            public boolean onQueryTextSubmit(String query) { return false; }
 
-            @Override public boolean onQueryTextChange(String newText) {
+            @Override
+            public boolean onQueryTextChange(String newText) {
                 filteredList.clear();
                 for (Chat chat : chatList) {
                     if (chat.getName().toLowerCase().contains(newText.toLowerCase())) {

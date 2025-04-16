@@ -4,18 +4,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     private List<Chat> chatList;
+    private OnChatClickListener listener;
 
-    public ChatAdapter(List<Chat> chatList) {
+    public ChatAdapter(List<Chat> chatList, OnChatClickListener listener) {
         this.chatList = chatList;
+        this.listener = listener;
     }
 
     @NonNull
@@ -30,6 +30,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         Chat chat = chatList.get(position);
         holder.title.setText(chat.getName());
         holder.message.setText(chat.getLastMessage());
+
+        holder.itemView.setOnClickListener(v -> listener.onChatClick(chat));
     }
 
     @Override
@@ -45,5 +47,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             title = itemView.findViewById(android.R.id.text1);
             message = itemView.findViewById(android.R.id.text2);
         }
+    }
+
+    public interface OnChatClickListener {
+        void onChatClick(Chat chat);
     }
 }

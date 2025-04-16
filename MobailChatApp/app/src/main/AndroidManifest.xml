@@ -27,6 +27,10 @@
 
         <activity android:name=".ChatListActivity" />
 
+        <activity android:name=".SettingActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        </activity>
+
     </application>
 
 </manifest>
