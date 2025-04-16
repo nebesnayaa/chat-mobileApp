@@ -1,4 +1,3 @@
-// LoginActivity.java
 package com.example.mobailchatapp;
 
 import android.os.Bundle;

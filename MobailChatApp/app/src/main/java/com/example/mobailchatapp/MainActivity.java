@@ -1,4 +1,3 @@
-// MainActivity.java
 package com.example.mobailchatapp;
 
 import android.content.Intent;
