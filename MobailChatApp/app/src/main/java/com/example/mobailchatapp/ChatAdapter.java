@@ -4,34 +4,35 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import androidx.annotation.NonNull;
+
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     private List<Chat> chatList;
-    private OnChatClickListener listener;
+    private OnChatClickListener onChatClickListener;
 
-    public ChatAdapter(List<Chat> chatList, OnChatClickListener listener) {
+    public ChatAdapter(List<Chat> chatList, OnChatClickListener onChatClickListener) {
         this.chatList = chatList;
-        this.listener = listener;
+        this.onChatClickListener = onChatClickListener;
     }
 
-    @NonNull
     @Override
-    public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_2, parent, false);
+    public ChatViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat, parent, false);
         return new ChatViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
+    public void onBindViewHolder(ChatViewHolder holder, int position) {
         Chat chat = chatList.get(position);
-        holder.title.setText(chat.getName());
-        holder.message.setText(chat.getLastMessage());
+        holder.nameTextView.setText(chat.getName());
+        holder.lastMessageTextView.setText(chat.getLastMessage());
 
-        holder.itemView.setOnClickListener(v -> listener.onChatClick(chat));
+        // Обработчик клика на чат
+        holder.itemView.setOnClickListener(v -> onChatClickListener.onChatClick(chat));
     }
 
     @Override
@@ -39,16 +40,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return chatList.size();
     }
 
-    class ChatViewHolder extends RecyclerView.ViewHolder {
-        TextView title, message;
+    // ViewHolder для одного чата
+    public static class ChatViewHolder extends RecyclerView.ViewHolder {
+        TextView nameTextView;
+        TextView lastMessageTextView;
 
-        ChatViewHolder(@NonNull View itemView) {
+        public ChatViewHolder(View itemView) {
             super(itemView);
-            title = itemView.findViewById(android.R.id.text1);
-            message = itemView.findViewById(android.R.id.text2);
+            nameTextView = itemView.findViewById(R.id.chat_name);
+            lastMessageTextView = itemView.findViewById(R.id.last_message);
         }
     }
 
+    // Интерфейс для обработки клика на чат
     public interface OnChatClickListener {
         void onChatClick(Chat chat);
     }
