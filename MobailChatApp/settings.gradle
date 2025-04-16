@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "MobailChatApp"
 include ':app'
+include ':build.gradle'
+project(':build.gradle').projectDir = new File(rootDir, 'app/build.gradle')

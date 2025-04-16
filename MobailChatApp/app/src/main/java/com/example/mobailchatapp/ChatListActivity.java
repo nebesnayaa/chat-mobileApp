@@ -1,9 +1,11 @@
 package com.example.mobailchatapp;
 
 import android.os.Bundle;
-import android.view.View;
-import android.widget.SearchView;
+import androidx.appcompat.widget.SearchView;
+
+import android.util.Log;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,7 +13,15 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.mobailchatapp.R;
+
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +38,7 @@ public class ChatListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("ChatListActivity", "onCreate запущено");
         setContentView(R.layout.activity_chat_list);
 
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -50,11 +61,30 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-        chatList.add(new Chat("Мама", "Привет"));
-        chatList.add(new Chat("Друг", "Что делаешь?"));
-        chatList.add(new Chat("Работа", "Не забудь отчет"));
+        // Firebase: отримуємо список чатів
+        DatabaseReference chatsRef = FirebaseDatabase.getInstance().getReference("chats");
 
-        filteredList.addAll(chatList);
+        chatsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                chatList.clear();
+                filteredList.clear();
+                for (DataSnapshot chatSnapshot : snapshot.getChildren()) {
+                    Chat chat = chatSnapshot.getValue(Chat.class);
+                    if (chat != null) {
+                        chatList.add(chat);
+                    }
+                }
+                filteredList.addAll(chatList);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(ChatListActivity.this, "Помилка завантаження чатів", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         adapter = new ChatAdapter(filteredList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
