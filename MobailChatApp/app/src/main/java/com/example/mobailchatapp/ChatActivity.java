@@ -14,12 +14,13 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class ChatActivity extends AppCompatActivity {
 
     private EditText messageEditText;
     private Button sendButton;
-    private String userId;
+    private String chatId;
     private String username;
     private TextView usernameTextView;
     private LinearLayout messagesContainer;
@@ -34,17 +35,18 @@ public class ChatActivity extends AppCompatActivity {
         usernameTextView = findViewById(R.id.username_text_view);
         messagesContainer = findViewById(R.id.messages_container); // Теперь messagesContainer - LinearLayout
 
-        userId = getIntent().getStringExtra("userId");
+        // Получаем chatId и username из Intent
+        chatId = getIntent().getStringExtra("chatId");
         username = getIntent().getStringExtra("username");
         usernameTextView.setText(username);
 
         // Прослушивание сообщений
-        listenForMessages(userId);
+        listenForMessages(chatId);
 
         sendButton.setOnClickListener(v -> {
             String message = messageEditText.getText().toString();
             if (!message.isEmpty()) {
-                sendMessage(userId, message);
+                sendMessage(chatId, message);
             }
         });
 
@@ -54,20 +56,35 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void sendMessage(String userId, String message) {
-        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId).push();
-        messagesRef.setValue(new ChatMessage(message)); // Сохраняем сообщение как объект
+    private void sendMessage(String chatId, String message) {
+        // Получаем ссылку на базу данных для сообщений в данном чате
+        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId).push();
+
+        // Получаем UID текущего пользователя и текущее время
+        String senderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        long timestamp = System.currentTimeMillis();
+
+        // Создаём объект ChatMessage
+        ChatMessage chatMessage = new ChatMessage(message, senderId, timestamp);
+
+        // Сохраняем сообщение в Firebase
+        messagesRef.setValue(chatMessage);
+
+        // Очищаем поле ввода
         messageEditText.setText("");
     }
 
-    private void listenForMessages(String userId) {
-        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId);
+    private void listenForMessages(String chatId) {
+        // Получаем ссылку на базу данных для сообщений в данном чате
+        DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId);
 
+        // Добавляем слушатель для получения данных
         messagesRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                messagesContainer.removeAllViews();
+                messagesContainer.removeAllViews();  // Очищаем контейнер сообщений
 
+                // Проходим по всем сообщениям и добавляем их в интерфейс
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     ChatMessage message = snapshot.getValue(ChatMessage.class);
                     if (message != null) {
@@ -78,30 +95,45 @@ public class ChatActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
+                // Ошибка при загрузке сообщений
                 Toast.makeText(ChatActivity.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void addMessageToChat(String message) {
+        // Создаём новый TextView для отображения сообщения
         TextView messageTextView = new TextView(this);
         messageTextView.setText(message);
-        messagesContainer.addView(messageTextView);
+        messagesContainer.addView(messageTextView);  // Добавляем сообщение в контейнер
     }
 
+    // Класс для представления сообщения
     private static class ChatMessage {
         private String message;
+        private String senderId;
+        private long timestamp;
 
         public ChatMessage() {
-
+            // Пустой конструктор нужен для Firebase
         }
 
-        public ChatMessage(String message) {
+        public ChatMessage(String message, String senderId, long timestamp) {
             this.message = message;
+            this.senderId = senderId;
+            this.timestamp = timestamp;
         }
 
         public String getMessage() {
             return message;
+        }
+
+        public String getSenderId() {
+            return senderId;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
         }
     }
 }
