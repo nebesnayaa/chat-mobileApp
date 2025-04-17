@@ -84,12 +84,37 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
+//        adapter = new ChatAdapter(filteredList, chat -> {
+//            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
+//            intent.putExtra("chatId", chat.getChatId());
+//            intent.putExtra("userId", chat.getUserId());
+//            startActivity(intent);
+//        });
         adapter = new ChatAdapter(filteredList, chat -> {
-            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
-            intent.putExtra("chatId", chat.getChatId());
-            intent.putExtra("userId", chat.getUserId());
-            startActivity(intent);
+            String currentUserId = currentUser.getUid();
+            String otherUserId = chat.getUserId();
+
+            // Якщо чат ще не створений, створити його
+            if (chat.getChatId() == null || chat.getChatId().isEmpty()) {
+                String chatId = currentUserId.compareTo(otherUserId) < 0 ?
+                        currentUserId + "_" + otherUserId : otherUserId + "_" + currentUserId;
+
+                startChatWithUser(otherUserId); // створення чату
+
+                // Створюємо намір для переходу
+                Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
+                intent.putExtra("chatId", chatId);
+                intent.putExtra("userId", otherUserId);
+                startActivity(intent);
+            } else {
+                // Інакше — перейти в існуючий чат
+                Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
+                intent.putExtra("chatId", chat.getChatId());
+                intent.putExtra("userId", chat.getUserId());
+                startActivity(intent);
+            }
         });
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
@@ -108,12 +133,46 @@ public class ChatListActivity extends AppCompatActivity {
 
     private void filterChatsByName(String query) {
         filteredList.clear();
-        for (Chat chat : chatList) {
+
+        if (query.isEmpty()) {
+            filteredList.addAll(chatList);  // Показуємо всі наявні чати без "віртуальних"
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        for (Chat chat : chatList) {  // Пошук по існуючих чатах
             if (chat.getName() != null && chat.getName().toLowerCase().contains(query.toLowerCase())) {
                 filteredList.add(chat);
             }
         }
+
+        // Пошук по всіх юзерах (для створення нового чату)
+        for (Map.Entry<String, User> entry : allUsers.entrySet()) {
+            String userId = entry.getKey();
+            User user = entry.getValue();
+
+            if (userId.equals(currentUser.getUid())) continue;
+
+            // Перевірка: чи існує чат з цим користувачем?
+            boolean chatExists = false;
+            for (Chat chat : chatList) {
+                String chatUid = chat.getUserId();
+                if (chatUid != null && chatUid.equals(userId)) {
+                    chatExists = true;
+                    break;
+                }
+            }
+
+            if (!chatExists && user.getName().toLowerCase().contains(query.toLowerCase())) {
+                Chat virtualChat = new Chat();
+                virtualChat.setName(user.getName());
+                virtualChat.setUserId(userId);
+                virtualChat.setLastMessage("Натисни, щоб створити чат");
+                filteredList.add(virtualChat);
+            }
+        }
         adapter.notifyDataSetChanged();
+
     }
 
     private void loadAllUsersAndChats() {
@@ -131,7 +190,7 @@ public class ChatListActivity extends AppCompatActivity {
         });
     }
 
-    private void loadUserChats() {
+    private void  loadUserChats() {
         String currentUserId = currentUser.getUid();
         dbRef.child("userChats").child(currentUserId)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -176,8 +235,22 @@ public class ChatListActivity extends AppCompatActivity {
         String chatId = currentUserId.compareTo(otherUserId) < 0 ?
                 currentUserId + "_" + otherUserId : otherUserId + "_" + currentUserId;
 
-        dbRef.child("chats").child(chatId).child("lastMessage").setValue("Чат создан");
+        DatabaseReference chatRef = dbRef.child("chats").child(chatId);
+
+        Map<String, Object> chatData = new HashMap<>();
+        chatData.put("lastMessage", "Чат створено");
+        chatData.put("isGroup", false);
+
+        Map<String, String> members = new HashMap<>();
+        members.put("userId1", currentUserId);
+        members.put("userId2", otherUserId);
+        chatData.put("members", members);
+
+        chatRef.setValue(chatData);
         dbRef.child("userChats").child(currentUserId).child(chatId).setValue(true);
         dbRef.child("userChats").child(otherUserId).child(chatId).setValue(true);
+
+        Toast.makeText(this, "Чат створено", Toast.LENGTH_SHORT).show();
     }
+
 }
