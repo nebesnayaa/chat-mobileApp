@@ -44,7 +44,6 @@ public class ChatListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_list);
 
-        // Ініціалізація елементів UI
         drawerLayout = findViewById(R.id.drawer_layout);
         navView = findViewById(R.id.nav_view);
         searchView = findViewById(R.id.search_view);
@@ -52,50 +51,30 @@ public class ChatListActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        // Получаем ссылку на TextView для отображения логина пользователя в Toolbar
-        toolbarTitle = findViewById(R.id.toolbar_title);
-
-        // Получаем текущего пользователя из Firebase
-        String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        toolbarTitle.setText(userEmail);
-=======
         toolbarTitle = findViewById(R.id.toolbar_title);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-=======
-        toolbarTitle = findViewById(R.id.toolbar_title);
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-        // Firebase Database посилання
         dbRef = FirebaseDatabase
                 .getInstance("https://chat-mobileapp-b05c2-default-rtdb.europe-west1.firebasedatabase.app/")
                 .getReference();
 
-        // Отримання логіна користувача з Firebase і встановлення в toolbar
         if (currentUser != null) {
             String uid = currentUser.getUid();
             dbRef.child("users").child(uid).child("name")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        String userName = snapshot.getValue(String.class);
-                        toolbarTitle.setText(userName != null ? userName : "Користувач");
-                    }
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            String userName = snapshot.getValue(String.class);
+                            toolbarTitle.setText(userName != null ? userName : "Користувач");
+                        }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e("USER_LOAD", "❌ Не вдалося зчитати логін", error.toException());
-                        toolbarTitle.setText("Користувач");
-                    }
-                });
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Log.e("USER_LOAD", "❌ Не вдалося зчитати логін", error.toException());
+                            toolbarTitle.setText("Користувач");
+                        }
+                    });
         }
-<<<<<<< HEAD
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-=======
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.app_name, R.string.app_name);
@@ -111,13 +90,7 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-=======
-=======
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-        // Налаштування адаптера та RecyclerView
+        // Настройка адаптера
         adapter = new ChatAdapter(filteredList, chat -> {
             Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
             intent.putExtra("userId", chat.getUserId());
@@ -125,95 +98,52 @@ public class ChatListActivity extends AppCompatActivity {
         });
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
-<<<<<<< HEAD
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-=======
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
 
-        // Зчитування чату користувача
+        // Загрузка чатов
         if (currentUser != null) {
             String currentUserId = currentUser.getUid();
-            dbRef.child("chats").addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    chatList.clear();
-                    filteredList.clear();
+            dbRef.child("chats").child(currentUserId)
+                    .addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            chatList.clear();
+                            filteredList.clear();
 
-                    for (DataSnapshot child : snapshot.getChildren()) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        String key = child.getKey();
-                        if (key != null && key.equals(currentUserId)) {
-                            for (DataSnapshot chatSnapshot : child.getChildren()) {
+                            for (DataSnapshot chatSnapshot : snapshot.getChildren()) {
                                 Chat chat = chatSnapshot.getValue(Chat.class);
                                 if (chat != null) {
                                     chatList.add(chat);
-                                    // Логируем добавление чата для отладки
                                     Log.d("ChatList", "Добавлен чат: " + chat.getName());
                                 }
                             }
-                            break;
-=======
-                        Chat chat = child.getValue(Chat.class);
-                        if (chat != null && chat.getUserId().equals(currentUserId)) {
-                            chatList.add(chat);
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-=======
-                        Chat chat = child.getValue(Chat.class);
-                        if (chat != null && chat.getUserId().equals(currentUserId)) {
-                            chatList.add(chat);
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
+
+                            filteredList.addAll(chatList);
+                            adapter.notifyDataSetChanged();
                         }
-                    }
 
-                    // Заполняем filteredList всеми чатом
-                    filteredList.addAll(chatList);
-                    adapter.notifyDataSetChanged();
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(ChatListActivity.this, "Ошибка: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Toast.makeText(ChatListActivity.this, "Ошибка: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        // Настройка адаптера для RecyclerView
-        adapter = new ChatAdapter(filteredList, chat -> {
-            // Логика перехода к чату
-            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
-            intent.putExtra("userId", chat.getUserId());
-            startActivity(intent);
-        });
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
-
-        // Настройка поиска по имени
-=======
-        // Пошук по чатам
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
-=======
-        // Пошук по чатам
->>>>>>> 32632aae70e7150f3cbd12b85b6d585d66636974
+        // Поиск
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                return false; // Не делаем поиск при отправке
+                return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
                 filteredList.clear();
                 for (Chat chat : chatList) {
-                    // Проверяем, если имя чата содержит текст поиска
-                    if (chat.getName() != null && chat.getName().toLowerCase().contains(newText.toLowerCase())) {
-                        filteredList.add(chat);  // Добавляем чат в отфильтрованный список
+                    if (chat.getName() != null &&
+                            chat.getName().toLowerCase().contains(newText.toLowerCase())) {
+                        filteredList.add(chat);
                     }
                 }
-                // Обновляем адаптер
                 adapter.notifyDataSetChanged();
                 return true;
             }
