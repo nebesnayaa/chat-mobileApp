@@ -44,6 +44,7 @@ public class ChatListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_list);
 
+        // Ініціалізація елементів UI
         drawerLayout = findViewById(R.id.drawer_layout);
         navView = findViewById(R.id.nav_view);
         searchView = findViewById(R.id.search_view);
@@ -54,28 +55,31 @@ public class ChatListActivity extends AppCompatActivity {
         toolbarTitle = findViewById(R.id.toolbar_title);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
+        // Firebase Database посилання
         dbRef = FirebaseDatabase
                 .getInstance("https://chat-mobileapp-b05c2-default-rtdb.europe-west1.firebasedatabase.app/")
                 .getReference();
 
+        // Отримання логіна користувача з Firebase і встановлення в toolbar
         if (currentUser != null) {
             String uid = currentUser.getUid();
             dbRef.child("users").child(uid).child("name")
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            String userName = snapshot.getValue(String.class);
-                            toolbarTitle.setText(userName != null ? userName : "Користувач");
-                        }
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        String userName = snapshot.getValue(String.class);
+                        toolbarTitle.setText(userName != null ? userName : "Користувач");
+                    }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                            Log.e("USER_LOAD", "❌ Не вдалося зчитати логін", error.toException());
-                            toolbarTitle.setText("Користувач");
-                        }
-                    });
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e("USER_LOAD", "❌ Не вдалося зчитати логін", error.toException());
+                        toolbarTitle.setText("Користувач");
+                    }
+                });
         }
 
+        // Navigation Drawer логіка
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.app_name, R.string.app_name);
         drawerLayout.addDrawerListener(toggle);
@@ -90,7 +94,7 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-        // Настройка адаптера
+        // Налаштування адаптера та RecyclerView
         adapter = new ChatAdapter(filteredList, chat -> {
             Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
             intent.putExtra("userId", chat.getUserId());
@@ -99,36 +103,47 @@ public class ChatListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        // Загрузка чатов
+        // Зчитування чату користувача
         if (currentUser != null) {
             String currentUserId = currentUser.getUid();
-            dbRef.child("chats").child(currentUserId)
-                    .addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            chatList.clear();
-                            filteredList.clear();
+            dbRef.child("userChats").child(currentUserId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    chatList.clear();
+                    filteredList.clear();
 
-                            for (DataSnapshot chatSnapshot : snapshot.getChildren()) {
-                                Chat chat = chatSnapshot.getValue(Chat.class);
-                                if (chat != null) {
-                                    chatList.add(chat);
-                                    Log.d("ChatList", "Добавлен чат: " + chat.getName());
+                    for (DataSnapshot chatSnap : snapshot.getChildren()) {
+                        String chatId = chatSnap.getKey();
+                        // 2. Для кожного chatId — отримуємо дані чату
+                        dbRef.child("chats").child(chatId)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot chatData) {
+                                    Chat chat = chatData.getValue(Chat.class);
+                                    if (chat != null) {
+                                        chat.setChatId(chatId);
+                                        chatList.add(chat);
+                                        filteredList.add(chat);
+                                        adapter.notifyDataSetChanged();
+                                    }
                                 }
-                            }
 
-                            filteredList.addAll(chatList);
-                            adapter.notifyDataSetChanged();
-                        }
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {}
+                            });
+                    }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                            Toast.makeText(ChatListActivity.this, "Ошибка: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Toast.makeText(ChatListActivity.this, "Ошибка: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
-        // Поиск
+        // Пошук
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
