@@ -7,7 +7,6 @@ import android.widget.Button;
 import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -22,6 +21,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -113,7 +113,7 @@ public class ChatActivity extends AppCompatActivity {
         messageLayout.setPadding(10, 10, 10, 10);
         messageLayout.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
 
-        // Внутренний контейнер для текста и времени
+        // Внутренний контейнер для имени, текста и времени
         LinearLayout innerLayout = new LinearLayout(this);
         innerLayout.setOrientation(LinearLayout.VERTICAL);
         innerLayout.setLayoutParams(new LinearLayout.LayoutParams(
@@ -121,17 +121,26 @@ public class ChatActivity extends AppCompatActivity {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
+        // Имя отправителя (показывается всегда)
+        TextView senderNameTextView = new TextView(this);
+        senderNameTextView.setText(isCurrentUser ? "Вы" : username);
+        senderNameTextView.setTextSize(12);
+        senderNameTextView.setTextColor(Color.DKGRAY);
+        senderNameTextView.setPadding(10, 0, 10, 4);
+        innerLayout.addView(senderNameTextView);
+
         // Текст сообщения
         TextView messageTextView = new TextView(this);
         messageTextView.setText(message.getMessage());
         messageTextView.setTextSize(16);
         messageTextView.setTextColor(Color.WHITE);
         messageTextView.setPadding(20, 10, 20, 10);
+
         GradientDrawable background = new GradientDrawable();
-        background.setCornerRadius(24); // Скругление углов
+        background.setCornerRadius(24);
         background.setColor(isCurrentUser ? Color.parseColor("#4CAF50") : Color.parseColor("#2196F3"));
         messageTextView.setBackground(background);
-
+        innerLayout.addView(messageTextView);
 
         // Время
         TextView timeTextView = new TextView(this);
@@ -140,9 +149,8 @@ public class ChatActivity extends AppCompatActivity {
         timeTextView.setTextColor(Color.LTGRAY);
         timeTextView.setPadding(10, 2, 10, 0);
         timeTextView.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
-
-        innerLayout.addView(messageTextView);
         innerLayout.addView(timeTextView);
+
         messageLayout.addView(innerLayout);
         messagesContainer.addView(messageLayout);
     }
@@ -151,19 +159,12 @@ public class ChatActivity extends AppCompatActivity {
         return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
     }
 
-    private String formatMessage(ChatMessage message) {
-        String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(message.getTimestamp()));
-        String senderName = message.getSenderId().equals(currentUserId) ? "Вы" : username;
-        return senderName + ": " + message.getMessage() + "  (" + time + ")";
-    }
-
     private static class ChatMessage {
         private String message;
         private String senderId;
         private long timestamp;
 
-        public ChatMessage() {
-        }
+        public ChatMessage() {}
 
         public ChatMessage(String message, String senderId, long timestamp) {
             this.message = message;

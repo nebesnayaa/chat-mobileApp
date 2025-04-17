@@ -1,79 +1,74 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <!-- Верхняя панель -->
     <RelativeLayout
-        android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@android:color/holo_blue_dark"
+        android:background="#2196F3"
         android:padding="8dp">
 
+        <!-- Кнопка выхода слева -->
         <ImageButton
             android:id="@+id/logout_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:contentDescription="Выход"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentStart="true"
-            android:background="?android:attr/selectableItemBackground" />
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="@android:color/white" />
 
+        <!-- Имя по центру -->
         <TextView
             android:id="@+id/username_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Имя"
-            android:textColor="@android:color/white"
+            android:layout_centerInParent="true"
+            android:text="Имя пользователя"
             android:textSize="18sp"
-            android:layout_centerInParent="true" />
+            android:textColor="@android:color/white"
+            android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- Список сообщений -->
+    <!-- Контейнер для сообщений -->
     <ScrollView
         android:id="@+id/messages_scroll_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/message_input_container"
-        android:layout_below="@+id/top_bar"
-        android:fillViewport="true"
-        android:padding="8dp">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:id="@+id/messages_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:padding="8dp"/>
     </ScrollView>
 
-    <!-- Ввод сообщения -->
+    <!-- Поле ввода и кнопка отправки -->
     <LinearLayout
-        android:id="@+id/message_input_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="@android:color/white">
+        android:padding="8dp">
 
         <EditText
             android:id="@+id/message_edit_text"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Введите сообщение"
-            android:padding="8dp"
-            android:textColor="#000000"
-            android:background="@android:drawable/editbox_background" />
+            android:hint="Введите сообщение" />
 
         <Button
             android:id="@+id/send_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=">"
-            android:textSize="18sp"
-            android:layout_marginStart="8dp"
-            android:minWidth="48dp"
-            android:minHeight="48dp" />
+            android:text="Отправить" />
     </LinearLayout>
-</RelativeLayout>
+</LinearLayout>
