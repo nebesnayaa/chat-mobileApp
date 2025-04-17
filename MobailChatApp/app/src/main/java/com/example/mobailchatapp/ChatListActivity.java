@@ -36,7 +36,7 @@ public class ChatListActivity extends AppCompatActivity {
     private ChatAdapter adapter;
     private List<Chat> chatList = new ArrayList<>();
     private List<Chat> filteredList = new ArrayList<>();
-    private TextView toolbarTitle; // Для отображения логина пользователя в Toolbar
+    private TextView toolbarTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,7 +116,6 @@ public class ChatListActivity extends AppCompatActivity {
 
 
         adapter = new ChatAdapter(filteredList, chat -> {
-            // При выборе пользователя, открываем экран чата
             Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
             intent.putExtra("userId", chat.getUserId());
             startActivity(intent);

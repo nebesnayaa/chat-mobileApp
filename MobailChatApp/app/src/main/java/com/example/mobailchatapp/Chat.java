@@ -4,7 +4,7 @@ public class Chat {
     private String chatId;
     private String name;
     private String lastMessage;
-    private String userId;  // Добавлен userId
+    private String userId;
 
     public Chat() {}
 
@@ -12,7 +12,7 @@ public class Chat {
         this.chatId = chatId;
         this.name = name;
         this.lastMessage = lastMessage;
-        this.userId = extractUserIdFromChatId(chatId);  // Инициализируем userId
+        this.userId = extractUserIdFromChatId(chatId);
     }
 
     public String getChatId() {
@@ -21,7 +21,7 @@ public class Chat {
 
     public void setChatId(String chatId) {
         this.chatId = chatId;
-        this.userId = extractUserIdFromChatId(chatId);  // Обновляем userId при изменении chatId
+        this.userId = extractUserIdFromChatId(chatId);
     }
 
     public String getName() {
@@ -44,12 +44,9 @@ public class Chat {
         return userId;
     }
 
-    // Этот метод можно использовать, чтобы извлечь userId из chatId
     private String extractUserIdFromChatId(String chatId) {
-        // Например, разделим chatId по символу "_" и вернем одну часть
-        // Тут предполагается, что chatId состоит из двух частей, разделенных "_"
         String[] parts = chatId.split("_");
-        return parts.length > 0 ? parts[0] : null;  // Возвращаем первый элемент как userId
+        return parts.length > 0 ? parts[0] : null;
     }
 
     public void setUserId(String userId) {

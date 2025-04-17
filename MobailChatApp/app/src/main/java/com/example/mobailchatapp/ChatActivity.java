@@ -22,14 +22,13 @@ public class ChatActivity extends AppCompatActivity {
     private String userId;
     private String username;
     private TextView usernameTextView;
-    private LinearLayout messagesContainer; // Меняем тип с View на LinearLayout
+    private LinearLayout messagesContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        // Инициализация элементов интерфейса
         messageEditText = findViewById(R.id.message_edit_text);
         sendButton = findViewById(R.id.send_button);
         usernameTextView = findViewById(R.id.username_text_view);
@@ -42,7 +41,6 @@ public class ChatActivity extends AppCompatActivity {
         // Прослушивание сообщений
         listenForMessages(userId);
 
-        // Установка обработчика кнопки отправки сообщения
         sendButton.setOnClickListener(v -> {
             String message = messageEditText.getText().toString();
             if (!message.isEmpty()) {
@@ -50,30 +48,26 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // Обработчик кнопки выхода
         ImageButton logoutButton = findViewById(R.id.logout_button);
         logoutButton.setOnClickListener(v -> {
-            finish(); // Закрывает активити и возвращает в чат-лист
+            finish();
         });
     }
 
-    // Метод для отправки сообщения в Firebase
     private void sendMessage(String userId, String message) {
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId).push();
         messagesRef.setValue(new ChatMessage(message)); // Сохраняем сообщение как объект
-        messageEditText.setText(""); // Очищаем поле ввода
+        messageEditText.setText("");
     }
 
-    // Метод для получения сообщений из Firebase и их отображения
     private void listenForMessages(String userId) {
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("chats").child(userId);
 
         messagesRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                messagesContainer.removeAllViews(); // Теперь это работает, так как messagesContainer - LinearLayout
+                messagesContainer.removeAllViews();
 
-                // Итерация по всем сообщениям
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     ChatMessage message = snapshot.getValue(ChatMessage.class);
                     if (message != null) {
@@ -89,14 +83,12 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    // Метод для добавления сообщений в контейнер чата
     private void addMessageToChat(String message) {
         TextView messageTextView = new TextView(this);
         messageTextView.setText(message);
         messagesContainer.addView(messageTextView);
     }
 
-    // Класс для представления сообщения
     private static class ChatMessage {
         private String message;
 

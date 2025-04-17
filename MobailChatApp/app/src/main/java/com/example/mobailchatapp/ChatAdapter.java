@@ -31,7 +31,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         holder.nameTextView.setText(chat.getName());
         holder.lastMessageTextView.setText(chat.getLastMessage());
 
-        // Обработчик клика на чат
         holder.itemView.setOnClickListener(v -> onChatClickListener.onChatClick(chat));
     }
 
@@ -40,7 +39,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return chatList.size();
     }
 
-    // ViewHolder для одного чата
     public static class ChatViewHolder extends RecyclerView.ViewHolder {
         TextView nameTextView;
         TextView lastMessageTextView;
@@ -52,7 +50,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
     }
 
-    // Интерфейс для обработки клика на чат
     public interface OnChatClickListener {
         void onChatClick(Chat chat);
     }
