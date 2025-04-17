@@ -1,5 +1,6 @@
 package com.example.mobailchatapp;
 
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.Button;
@@ -106,20 +107,48 @@ public class ChatActivity extends AppCompatActivity {
     private void addMessageToChat(ChatMessage message) {
         boolean isCurrentUser = message.getSenderId().equals(currentUserId);
 
+        // Внешний контейнер
         LinearLayout messageLayout = new LinearLayout(this);
         messageLayout.setOrientation(LinearLayout.HORIZONTAL);
         messageLayout.setPadding(10, 10, 10, 10);
         messageLayout.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
 
+        // Внутренний контейнер для текста и времени
+        LinearLayout innerLayout = new LinearLayout(this);
+        innerLayout.setOrientation(LinearLayout.VERTICAL);
+        innerLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        // Текст сообщения
         TextView messageTextView = new TextView(this);
-        messageTextView.setText(formatMessage(message));
+        messageTextView.setText(message.getMessage());
         messageTextView.setTextSize(16);
         messageTextView.setTextColor(Color.WHITE);
         messageTextView.setPadding(20, 10, 20, 10);
-        messageTextView.setBackgroundColor(isCurrentUser ? Color.parseColor("#4CAF50") : Color.parseColor("#2196F3"));
+        GradientDrawable background = new GradientDrawable();
+        background.setCornerRadius(24); // Скругление углов
+        background.setColor(isCurrentUser ? Color.parseColor("#4CAF50") : Color.parseColor("#2196F3"));
+        messageTextView.setBackground(background);
 
-        messageLayout.addView(messageTextView);
+
+        // Время
+        TextView timeTextView = new TextView(this);
+        timeTextView.setText(formatTime(message.getTimestamp()));
+        timeTextView.setTextSize(12);
+        timeTextView.setTextColor(Color.LTGRAY);
+        timeTextView.setPadding(10, 2, 10, 0);
+        timeTextView.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
+
+        innerLayout.addView(messageTextView);
+        innerLayout.addView(timeTextView);
+        messageLayout.addView(innerLayout);
         messagesContainer.addView(messageLayout);
+    }
+
+    private String formatTime(long timestamp) {
+        return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
     }
 
     private String formatMessage(ChatMessage message) {
