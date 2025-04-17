@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -51,11 +50,11 @@ public class ChatListActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         // Получаем ссылку на TextView для отображения логина пользователя в Toolbar
-        toolbarTitle = findViewById(R.id.toolbar_title);
+//        toolbarTitle = findViewById(R.id.toolbar_title);
 
         // Получаем текущего пользователя из Firebase
-        String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        toolbarTitle.setText(userEmail); // Устанавливаем email пользователя в toolbar
+//        String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+//        toolbarTitle.setText(userEmail); // Устанавливаем email пользователя в toolbar
 
         // Настройка Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
@@ -73,14 +72,10 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-        FirebaseApp.initializeApp(this);
-        Log.d("ChatList", "Firebase initialized: " + (FirebaseApp.getInstance() != null));
-
         // Firebase: получаем список чатов залогіненогго користувача
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         if (currentUser != null) {
-            Log.d("ChatList", "UID користувача: " + currentUser.getUid());
             String currentUserId = currentUser.getUid();
             DatabaseReference chatRef = FirebaseDatabase.getInstance()
                     .getReference("chats");
@@ -91,15 +86,18 @@ public class ChatListActivity extends AppCompatActivity {
                     chatList.clear();
                     filteredList.clear();
 
-                    Log.d("ChatList", "onDataChange починаємо відбирати чати:");
-
-                    String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
+                    // Перебираємо всі елементи всередині "chats"
                     for (DataSnapshot child : snapshot.getChildren()) {
-                        Chat chat = child.getValue(Chat.class);
-                        if (chat != null && chat.getUserId().equals(currentUserId)) {
-                            chatList.add(chat);
-                            Log.d("ChatList", "Додано чат: " + chat.getName());
+                        String key = child.getKey();
+                        if (key != null && key.equals(currentUserId)) {
+                            for (DataSnapshot chatSnapshot : child.getChildren()) {
+                                Chat chat = chatSnapshot.getValue(Chat.class);
+                                if (chat != null) {
+                                    chatList.add(chat);
+                                    Log.d("ChatList", "Додано чат: " + chat.getName());
+                                }
+                            }
+                            break;
                         }
                     }
 
@@ -113,7 +111,6 @@ public class ChatListActivity extends AppCompatActivity {
                 }
             });
         }
-
 
         adapter = new ChatAdapter(filteredList, chat -> {
             Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
