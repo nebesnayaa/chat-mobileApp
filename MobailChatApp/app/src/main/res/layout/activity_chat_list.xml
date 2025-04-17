@@ -20,8 +20,8 @@
                 android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="User Email"
-                android:layout_gravity="center"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp" />
         </androidx.appcompat.widget.Toolbar>

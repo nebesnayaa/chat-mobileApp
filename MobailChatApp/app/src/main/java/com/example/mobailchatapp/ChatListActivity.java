@@ -36,12 +36,15 @@ public class ChatListActivity extends AppCompatActivity {
     private List<Chat> chatList = new ArrayList<>();
     private List<Chat> filteredList = new ArrayList<>();
     private TextView toolbarTitle;
+    private FirebaseUser currentUser;
+    private DatabaseReference dbRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_list);
 
+        // Ініціалізація елементів UI
         drawerLayout = findViewById(R.id.drawer_layout);
         navView = findViewById(R.id.nav_view);
         searchView = findViewById(R.id.search_view);
@@ -49,12 +52,32 @@ public class ChatListActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Получаем ссылку на TextView для отображения логина пользователя в Toolbar
-//        toolbarTitle = findViewById(R.id.toolbar_title);
+        toolbarTitle = findViewById(R.id.toolbar_title);
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        // Получаем текущего пользователя из Firebase
-//        String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-//        toolbarTitle.setText(userEmail); // Устанавливаем email пользователя в toolbar
+        // Firebase Database посилання
+        dbRef = FirebaseDatabase
+                .getInstance("https://chat-mobileapp-b05c2-default-rtdb.europe-west1.firebasedatabase.app/")
+                .getReference();
+
+        // Отримання логіна користувача з Firebase і встановлення в toolbar
+        if (currentUser != null) {
+            String uid = currentUser.getUid();
+            dbRef.child("users").child(uid).child("name")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        String userName = snapshot.getValue(String.class);
+                        toolbarTitle.setText(userName != null ? userName : "Користувач");
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e("USER_LOAD", "❌ Не вдалося зчитати логін", error.toException());
+                        toolbarTitle.setText("Користувач");
+                    }
+                });
+        }
 
         // Настройка Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
@@ -72,32 +95,28 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-        // Firebase: получаем список чатов залогіненогго користувача
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        // Налаштування адаптера та RecyclerView
+        adapter = new ChatAdapter(filteredList, chat -> {
+            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
+            intent.putExtra("userId", chat.getUserId());
+            startActivity(intent);
+        });
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
 
+        // Зчитування чату користувача
         if (currentUser != null) {
             String currentUserId = currentUser.getUid();
-            DatabaseReference chatRef = FirebaseDatabase.getInstance()
-                    .getReference("chats");
-
-            chatRef.addValueEventListener(new ValueEventListener() {
+            dbRef.child("chats").addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     chatList.clear();
                     filteredList.clear();
 
-                    // Перебираємо всі елементи всередині "chats"
                     for (DataSnapshot child : snapshot.getChildren()) {
-                        String key = child.getKey();
-                        if (key != null && key.equals(currentUserId)) {
-                            for (DataSnapshot chatSnapshot : child.getChildren()) {
-                                Chat chat = chatSnapshot.getValue(Chat.class);
-                                if (chat != null) {
-                                    chatList.add(chat);
-                                    Log.d("ChatList", "Додано чат: " + chat.getName());
-                                }
-                            }
-                            break;
+                        Chat chat = child.getValue(Chat.class);
+                        if (chat != null && chat.getUserId().equals(currentUserId)) {
+                            chatList.add(chat);
                         }
                     }
 
@@ -112,15 +131,7 @@ public class ChatListActivity extends AppCompatActivity {
             });
         }
 
-        adapter = new ChatAdapter(filteredList, chat -> {
-            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
-            intent.putExtra("userId", chat.getUserId());
-            startActivity(intent);
-        });
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
-
+        // Пошук по чатам
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) { return false; }
