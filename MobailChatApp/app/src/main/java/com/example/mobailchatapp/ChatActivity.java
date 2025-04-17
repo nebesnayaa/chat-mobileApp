@@ -6,15 +6,25 @@ import android.widget.Button;
 import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.graphics.Color;
+import android.view.ViewGroup;
+import android.widget.ScrollView;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -24,6 +34,8 @@ public class ChatActivity extends AppCompatActivity {
     private String username;
     private TextView usernameTextView;
     private LinearLayout messagesContainer;
+    private String currentUserId;
+    private ScrollView scrollView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,89 +45,95 @@ public class ChatActivity extends AppCompatActivity {
         messageEditText = findViewById(R.id.message_edit_text);
         sendButton = findViewById(R.id.send_button);
         usernameTextView = findViewById(R.id.username_text_view);
-        messagesContainer = findViewById(R.id.messages_container); // Теперь messagesContainer - LinearLayout
+        messagesContainer = findViewById(R.id.messages_container);
+        scrollView = findViewById(R.id.messages_scroll_view);
 
-        // Получаем chatId и username из Intent
         chatId = getIntent().getStringExtra("chatId");
         username = getIntent().getStringExtra("username");
+        currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         usernameTextView.setText(username);
 
-        // Прослушивание сообщений
         listenForMessages(chatId);
 
         sendButton.setOnClickListener(v -> {
-            String message = messageEditText.getText().toString();
+            String message = messageEditText.getText().toString().trim();
             if (!message.isEmpty()) {
                 sendMessage(chatId, message);
             }
         });
 
         ImageButton logoutButton = findViewById(R.id.logout_button);
-        logoutButton.setOnClickListener(v -> {
-            finish();
-        });
+        logoutButton.setOnClickListener(v -> finish());
     }
 
     private void sendMessage(String chatId, String message) {
-        // Получаем ссылку на базу данных для сообщений в данном чате
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId).push();
 
-        // Получаем UID текущего пользователя и текущее время
         String senderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         long timestamp = System.currentTimeMillis();
 
-        // Создаём объект ChatMessage
         ChatMessage chatMessage = new ChatMessage(message, senderId, timestamp);
-
-        // Сохраняем сообщение в Firebase
         messagesRef.setValue(chatMessage);
-
-        // Очищаем поле ввода
         messageEditText.setText("");
     }
 
     private void listenForMessages(String chatId) {
-        // Получаем ссылку на базу данных для сообщений в данном чате
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId);
 
-        // Добавляем слушатель для получения данных
         messagesRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                messagesContainer.removeAllViews();  // Очищаем контейнер сообщений
+            public void onDataChange(DataSnapshot snapshot) {
+                messagesContainer.removeAllViews();
 
-                // Проходим по всем сообщениям и добавляем их в интерфейс
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    ChatMessage message = snapshot.getValue(ChatMessage.class);
+                for (DataSnapshot messageSnapshot : snapshot.getChildren()) {
+                    ChatMessage message = messageSnapshot.getValue(ChatMessage.class);
                     if (message != null) {
-                        addMessageToChat(message.getMessage());
+                        addMessageToChat(message);
                     }
                 }
+
+                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // Ошибка при загрузке сообщений
-                Toast.makeText(ChatActivity.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
+            public void onCancelled(DatabaseError error) {
+                Toast.makeText(ChatActivity.this, "Ошибка загрузки сообщений", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void addMessageToChat(String message) {
-        // Создаём новый TextView для отображения сообщения
+    private void addMessageToChat(ChatMessage message) {
+        boolean isCurrentUser = message.getSenderId().equals(currentUserId);
+
+        LinearLayout messageLayout = new LinearLayout(this);
+        messageLayout.setOrientation(LinearLayout.HORIZONTAL);
+        messageLayout.setPadding(10, 10, 10, 10);
+        messageLayout.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
+
         TextView messageTextView = new TextView(this);
-        messageTextView.setText(message);
-        messagesContainer.addView(messageTextView);  // Добавляем сообщение в контейнер
+        messageTextView.setText(formatMessage(message));
+        messageTextView.setTextSize(16);
+        messageTextView.setTextColor(Color.WHITE);
+        messageTextView.setPadding(20, 10, 20, 10);
+        messageTextView.setBackgroundColor(isCurrentUser ? Color.parseColor("#4CAF50") : Color.parseColor("#2196F3"));
+
+        messageLayout.addView(messageTextView);
+        messagesContainer.addView(messageLayout);
     }
 
-    // Класс для представления сообщения
+    private String formatMessage(ChatMessage message) {
+        String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(message.getTimestamp()));
+        String senderName = message.getSenderId().equals(currentUserId) ? "Вы" : username;
+        return senderName + ": " + message.getMessage() + "  (" + time + ")";
+    }
+
     private static class ChatMessage {
         private String message;
         private String senderId;
         private long timestamp;
 
         public ChatMessage() {
-            // Пустой конструктор нужен для Firebase
         }
 
         public ChatMessage(String message, String senderId, long timestamp) {
