@@ -5,16 +5,19 @@ public class Chat {
     private String name;
     private String lastMessage;
     private String userId;
+    private long lastMessageTimestamp;
 
     public Chat() {}
 
-    public Chat(String chatId, String name, String lastMessage) {
+    public Chat(String chatId, String name, String lastMessage, long lastMessageTimestamp) {
         this.chatId = chatId;
         this.name = name;
         this.lastMessage = lastMessage;
         this.userId = extractUserIdFromChatId(chatId);
+        this.lastMessageTimestamp = lastMessageTimestamp;
     }
 
+    // Геттеры и сеттеры
     public String getChatId() {
         return chatId;
     }
@@ -44,12 +47,20 @@ public class Chat {
         return userId;
     }
 
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public long getLastMessageTimestamp() {
+        return lastMessageTimestamp;
+    }
+
+    public void setLastMessageTimestamp(long lastMessageTimestamp) {
+        this.lastMessageTimestamp = lastMessageTimestamp;
+    }
+
     private String extractUserIdFromChatId(String chatId) {
         String[] parts = chatId.split("_");
         return parts.length > 0 ? parts[0] : null;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 }

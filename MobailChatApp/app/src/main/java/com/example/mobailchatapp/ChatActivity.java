@@ -1,6 +1,10 @@
 package com.example.mobailchatapp;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.Button;
@@ -14,6 +18,7 @@ import android.graphics.Color;
 import android.view.ViewGroup;
 import android.widget.ScrollView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -21,7 +26,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -53,7 +57,7 @@ public class ChatActivity extends AppCompatActivity {
         username = getIntent().getStringExtra("username");
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        usernameTextView.setText(username);
+        usernameTextView.setText(username); // Имя собеседника в навбаре
 
         listenForMessages(chatId);
 
@@ -76,7 +80,16 @@ public class ChatActivity extends AppCompatActivity {
 
         ChatMessage chatMessage = new ChatMessage(message, senderId, timestamp);
         messagesRef.setValue(chatMessage);
+
+        // Обновляем информацию о последнем сообщении в чате
+        updateChatWithLastMessage(chatId, message, timestamp);
+
         messageEditText.setText("");
+    }
+    private void updateChatWithLastMessage(String chatId, String message, long timestamp) {
+        DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
+        chatRef.child("lastMessage").setValue(message);
+        chatRef.child("lastMessageTimestamp").setValue(timestamp);
     }
 
     private void listenForMessages(String chatId) {
@@ -91,6 +104,7 @@ public class ChatActivity extends AppCompatActivity {
                     ChatMessage message = messageSnapshot.getValue(ChatMessage.class);
                     if (message != null) {
                         addMessageToChat(message);
+
                     }
                 }
 
@@ -107,13 +121,11 @@ public class ChatActivity extends AppCompatActivity {
     private void addMessageToChat(ChatMessage message) {
         boolean isCurrentUser = message.getSenderId().equals(currentUserId);
 
-        // Внешний контейнер
         LinearLayout messageLayout = new LinearLayout(this);
         messageLayout.setOrientation(LinearLayout.HORIZONTAL);
         messageLayout.setPadding(10, 10, 10, 10);
         messageLayout.setGravity(isCurrentUser ? Gravity.END : Gravity.START);
 
-        // Внутренний контейнер для имени, текста и времени
         LinearLayout innerLayout = new LinearLayout(this);
         innerLayout.setOrientation(LinearLayout.VERTICAL);
         innerLayout.setLayoutParams(new LinearLayout.LayoutParams(
@@ -121,7 +133,6 @@ public class ChatActivity extends AppCompatActivity {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
-        // Имя отправителя (показывается всегда)
         TextView senderNameTextView = new TextView(this);
         senderNameTextView.setText(isCurrentUser ? "Вы" : username);
         senderNameTextView.setTextSize(12);
@@ -129,7 +140,6 @@ public class ChatActivity extends AppCompatActivity {
         senderNameTextView.setPadding(10, 0, 10, 4);
         innerLayout.addView(senderNameTextView);
 
-        // Текст сообщения
         TextView messageTextView = new TextView(this);
         messageTextView.setText(message.getMessage());
         messageTextView.setTextSize(16);
@@ -142,7 +152,6 @@ public class ChatActivity extends AppCompatActivity {
         messageTextView.setBackground(background);
         innerLayout.addView(messageTextView);
 
-        // Время
         TextView timeTextView = new TextView(this);
         timeTextView.setText(formatTime(message.getTimestamp()));
         timeTextView.setTextSize(12);
@@ -158,6 +167,32 @@ public class ChatActivity extends AppCompatActivity {
     private String formatTime(long timestamp) {
         return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
     }
+
+    //Уведомление не работает*
+//    private void showNotification(String messageText) {
+//        String channelId = "chat_notifications";
+//        String channelName = "Chat Messages";
+//
+//        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            NotificationChannel channel = new NotificationChannel(
+//                    channelId,
+//                    channelName,
+//                    NotificationManager.IMPORTANCE_DEFAULT
+//            );
+//            notificationManager.createNotificationChannel(channel);
+//        }
+//
+//        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+//                .setSmallIcon(android.R.drawable.ic_dialog_email)
+//                .setContentTitle("Новое сообщение от " + username)
+//                .setContentText(messageText)
+//                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+//                .setAutoCancel(true);
+//
+//        notificationManager.notify(1, builder.build());
+//    }
 
     private static class ChatMessage {
         private String message;

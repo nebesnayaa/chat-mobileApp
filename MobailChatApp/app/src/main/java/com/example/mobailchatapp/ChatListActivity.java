@@ -2,7 +2,6 @@ package com.example.mobailchatapp;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -190,38 +189,67 @@ public class ChatListActivity extends AppCompatActivity {
         });
     }
 
-    private void  loadUserChats() {
+    private void loadUserChats() {
         String currentUserId = currentUser.getUid();
         dbRef.child("userChats").child(currentUserId)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
                         chatList.clear();
                         filteredList.clear();
                         for (DataSnapshot chatSnap : snapshot.getChildren()) {
                             String chatId = chatSnap.getKey();
                             dbRef.child("chats").child(chatId)
                                     .addListenerForSingleValueEvent(new ValueEventListener() {
-                                        @Override public void onDataChange(@NonNull DataSnapshot chatData) {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot chatData) {
                                             Chat chat = chatData.getValue(Chat.class);
                                             if (chat != null) {
                                                 chat.setChatId(chatId);
                                                 String otherUserId = getOtherUserId(chatId);
                                                 User user = allUsers.get(otherUserId);
                                                 if (user != null) chat.setName(user.getName());
-                                                chatList.add(chat);
-                                                filteredList.add(chat);
-                                                adapter.notifyDataSetChanged();
+
+                                                // Подгружаем последнее сообщение
+                                                dbRef.child("messages")
+                                                        .child(chatId)
+                                                        .limitToLast(1) // Берем только последнее сообщение
+                                                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                                                            @Override
+                                                            public void onDataChange(@NonNull DataSnapshot messageSnap) {
+                                                                if (messageSnap.exists()) {
+                                                                    String lastMessage = messageSnap.getChildren().iterator().next().child("message").getValue(String.class);
+                                                                    chat.setLastMessage(lastMessage != null ? lastMessage : "Нет сообщений");
+                                                                } else {
+                                                                    chat.setLastMessage("Нет сообщений");
+                                                                }
+                                                                chatList.add(chat);
+                                                                filteredList.add(chat);
+                                                                adapter.notifyDataSetChanged();
+                                                            }
+
+                                                            @Override
+                                                            public void onCancelled(@NonNull DatabaseError error) {
+                                                                chat.setLastMessage("Не удалось загрузить сообщение");
+                                                                chatList.add(chat);
+                                                                filteredList.add(chat);
+                                                                adapter.notifyDataSetChanged();
+                                                            }
+                                                        });
                                             }
                                         }
 
-                                        @Override public void onCancelled(@NonNull DatabaseError error) {}
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {}
                                     });
                         }
                     }
 
-                    @Override public void onCancelled(@NonNull DatabaseError error) {}
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
                 });
     }
+
 
     private String getOtherUserId(String chatId) {
         String[] parts = chatId.split("_");
