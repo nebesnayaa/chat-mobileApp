@@ -71,11 +71,17 @@ public class ChatActivity extends AppCompatActivity {
     private void sendMessage(String chatId, String message) {
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId).push();
 
+
         String senderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         long timestamp = System.currentTimeMillis();
 
         ChatMessage chatMessage = new ChatMessage(message, senderId, timestamp);
-        messagesRef.setValue(chatMessage);
+        messagesRef.setValue(chatMessage).addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                DatabaseReference  chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("lastMessage");
+                chatRef.setValue(chatMessage.getMessage());
+            }
+        });
         messageEditText.setText("");
     }
 

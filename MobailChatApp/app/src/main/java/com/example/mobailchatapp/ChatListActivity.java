@@ -33,6 +33,7 @@ public class ChatListActivity extends AppCompatActivity {
     private TextView toolbarTitle;
     private FirebaseUser currentUser;
     private DatabaseReference dbRef;
+    private boolean firstLaunch = true;
 
     private Map<String, User> allUsers = new HashMap<>();
 
@@ -130,7 +131,6 @@ public class ChatListActivity extends AppCompatActivity {
             }
         });
     }
-
     private void filterChatsByName(String query) {
         filteredList.clear();
 
@@ -221,6 +221,16 @@ public class ChatListActivity extends AppCompatActivity {
 
                     @Override public void onCancelled(@NonNull DatabaseError error) {}
                 });
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        if(this.firstLaunch){
+            this.firstLaunch = false;
+            return;
+        }
+        loadUserChats();
     }
 
     private String getOtherUserId(String chatId) {

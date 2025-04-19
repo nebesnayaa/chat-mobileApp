@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.io.Console;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,6 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
                         } else {
                             Log.e("REGISTER", "Помилка створення користувача", task.getException());
                             Toast.makeText(RegisterActivity.this, "Помилка: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            Log.d("ERROR: ", task.getException().getMessage());
                         }
                     });
             }
