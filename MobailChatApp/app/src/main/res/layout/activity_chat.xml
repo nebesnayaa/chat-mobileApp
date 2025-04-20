@@ -13,7 +13,7 @@
         android:background="?attr/colorPrimary"
         android:padding="8dp">
 
-        <!-- Кнопка выхода слева -->
+        <!-- Кнопка выхода -->
         <ImageButton
             android:id="@+id/logout_button"
             android:layout_width="40dp"
@@ -24,9 +24,9 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             app:tint="@android:color/white" />
 
-        <!-- Имя по центру -->
+        <!-- Имя собеседника по центру -->
         <TextView
-            android:id="@+id/username_text_view"
+            android:id="@+id/chat_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
@@ -36,7 +36,7 @@
             android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- Контейнер для сообщений -->
+    <!-- Контейнер сообщений -->
     <ScrollView
         android:id="@+id/messages_scroll_view"
         android:layout_width="match_parent"
@@ -51,7 +51,7 @@
             android:padding="8dp"/>
     </ScrollView>
 
-    <!-- Поле ввода и кнопка отправки -->
+    <!-- Поле ввода и кнопка -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

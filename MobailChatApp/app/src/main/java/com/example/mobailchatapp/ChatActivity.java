@@ -49,7 +49,7 @@ public class ChatActivity extends AppCompatActivity {
 
         messageEditText = findViewById(R.id.message_edit_text);
         sendButton = findViewById(R.id.send_button);
-        usernameTextView = findViewById(R.id.username_text_view);
+        usernameTextView = findViewById(R.id.chat_name);
         messagesContainer = findViewById(R.id.messages_container);
         scrollView = findViewById(R.id.messages_scroll_view);
 
@@ -57,7 +57,11 @@ public class ChatActivity extends AppCompatActivity {
         username = getIntent().getStringExtra("username");
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        usernameTextView.setText(username); // Имя собеседника в навбаре
+        if (username != null && !username.isEmpty()) {
+            usernameTextView.setText(username);
+        } else {
+            usernameTextView.setText("Чат");
+        }
 
         listenForMessages(chatId);
 
@@ -75,19 +79,19 @@ public class ChatActivity extends AppCompatActivity {
     private void sendMessage(String chatId, String message) {
         DatabaseReference messagesRef = FirebaseDatabase.getInstance().getReference("messages").child(chatId).push();
 
-
         String senderId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         long timestamp = System.currentTimeMillis();
 
         ChatMessage chatMessage = new ChatMessage(message, senderId, timestamp);
         messagesRef.setValue(chatMessage).addOnCompleteListener(task -> {
             if(task.isSuccessful()){
-                DatabaseReference  chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("lastMessage");
+                DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("lastMessage");
                 chatRef.setValue(chatMessage.getMessage());
             }
         });
         messageEditText.setText("");
     }
+
     private void updateChatWithLastMessage(String chatId, String message, long timestamp) {
         DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
         chatRef.child("lastMessage").setValue(message);
@@ -106,7 +110,6 @@ public class ChatActivity extends AppCompatActivity {
                     ChatMessage message = messageSnapshot.getValue(ChatMessage.class);
                     if (message != null) {
                         addMessageToChat(message);
-
                     }
                 }
 
@@ -170,31 +173,33 @@ public class ChatActivity extends AppCompatActivity {
         return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
     }
 
-    //Уведомление не работает*
-//    private void showNotification(String messageText) {
-//        String channelId = "chat_notifications";
-//        String channelName = "Chat Messages";
-//
-//        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            NotificationChannel channel = new NotificationChannel(
-//                    channelId,
-//                    channelName,
-//                    NotificationManager.IMPORTANCE_DEFAULT
-//            );
-//            notificationManager.createNotificationChannel(channel);
-//        }
-//
-//        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-//                .setSmallIcon(android.R.drawable.ic_dialog_email)
-//                .setContentTitle("Новое сообщение от " + username)
-//                .setContentText(messageText)
-//                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-//                .setAutoCancel(true);
-//
-//        notificationManager.notify(1, builder.build());
-//    }
+    // Уведомление пока не используется — закомментировано
+    /*
+    private void showNotification(String messageText) {
+        String channelId = "chat_notifications";
+        String channelName = "Chat Messages";
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    channelName,
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle("Новое сообщение от " + username)
+                .setContentText(messageText)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
+
+        notificationManager.notify(1, builder.build());
+    }
+    */
 
     private static class ChatMessage {
         private String message;
