@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.Console;
 import java.util.HashMap;
@@ -61,24 +62,36 @@ public class RegisterActivity extends AppCompatActivity {
                                 String userEmail = user.getEmail();
                                 Log.d("REGISTER", "UID: " + uid + ", email: " + userEmail);
 
-                                Map<String, Object> userData = new HashMap<>();
-                                userData.put("email", userEmail);
-                                userData.put("name", userName);
-                                userData.put("createdAt", System.currentTimeMillis());
+                                FirebaseMessaging.getInstance().getToken()
+                                        .addOnCompleteListener(taskToken -> {
+                                                    if (!taskToken.isSuccessful()) {
+                                                        Log.w("REGISTER", "Не вдалося отримати FCM токен", taskToken.getException());
+                                                        return;
+                                                    }
+                                                    String fcmToken = taskToken.getResult();
+                                                    Log.d("REGISTER", "Отримано токен: " + fcmToken);
 
-                                FirebaseDatabase.getInstance().getReference("users")
-                                    .child(uid)
-                                    .setValue(userData)
-                                    .addOnSuccessListener(unused -> {
-                                        Log.d("REGISTER", "✅ Дані успішно записано в БД");
-                                        Toast.makeText(RegisterActivity.this, "Реєстрація успішна", Toast.LENGTH_SHORT).show();
-                                        startActivity(new Intent(RegisterActivity.this, ChatListActivity.class));
-                                        finish();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e("REGISTER", "❌ Помилка при записі в БД", e);
-                                        Toast.makeText(RegisterActivity.this, "❌ DB Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                    });
+
+                                                    Map<String, Object> userData = new HashMap<>();
+                                                    userData.put("email", userEmail);
+                                                    userData.put("name", userName);
+                                                    userData.put("createdAt", System.currentTimeMillis());
+                                                    userData.put("fcmToken", fcmToken);
+
+                                                    FirebaseDatabase.getInstance().getReference("users")
+                                                            .child(uid)
+                                                            .setValue(userData)
+                                                            .addOnSuccessListener(unused -> {
+                                                                Log.d("REGISTER", "✅ Дані успішно записано в БД");
+                                                                Toast.makeText(RegisterActivity.this, "Реєстрація успішна", Toast.LENGTH_SHORT).show();
+                                                                startActivity(new Intent(RegisterActivity.this, ChatListActivity.class));
+                                                                finish();
+                                                            })
+                                                            .addOnFailureListener(e -> {
+                                                                Log.e("REGISTER", "❌ Помилка при записі в БД", e);
+                                                                Toast.makeText(RegisterActivity.this, "❌ DB Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                                            });
+                                                });
                             } else {
                                 Log.e("REGISTER", "user == null після реєстрації");
                                 Toast.makeText(RegisterActivity.this, "Помилка: user == null", Toast.LENGTH_LONG).show();
