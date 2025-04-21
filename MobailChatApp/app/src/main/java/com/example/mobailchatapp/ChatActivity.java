@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.Toast;
@@ -17,8 +18,20 @@ import android.widget.LinearLayout;
 import android.graphics.Color;
 import android.view.ViewGroup;
 import android.widget.ScrollView;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Collections;
+
+import org.json.JSONObject;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -26,6 +39,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.functions.FirebaseFunctions;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -87,15 +101,64 @@ public class ChatActivity extends AppCompatActivity {
             if(task.isSuccessful()){
                 DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("lastMessage");
                 chatRef.setValue(chatMessage.getMessage());
+                String otherUserId = getOtherUserIdFromChatId(chatId, currentUserId);
+                fetchTokenAndSendNotification(otherUserId, "Нове повідомлення", message);
             }
         });
         messageEditText.setText("");
     }
 
+<<<<<<< Updated upstream
     private void updateChatWithLastMessage(String chatId, String message, long timestamp) {
         DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId);
         chatRef.child("lastMessage").setValue(message);
         chatRef.child("lastMessageTimestamp").setValue(timestamp);
+=======
+    private void fetchTokenAndSendNotification(String receiverUserId, String title, String body) {
+        DatabaseReference tokenRef = FirebaseDatabase.getInstance().getReference("users")
+                .child(receiverUserId)
+                .child("fcmToken");
+
+        tokenRef.get().addOnSuccessListener(dataSnapshot -> {
+            String token = dataSnapshot.getValue(String.class);
+            if (token != null && !token.isEmpty()) {
+                sendPushNotificationToBackend(token, title, body);
+            } else {
+                Log.w("PushNotif", "FCM token is null or empty for user: " + receiverUserId);
+            }
+        }).addOnFailureListener(e -> Log.e("PushNotif", "Failed to fetch FCM token", e));
+    }
+
+    private void sendPushNotificationToBackend(String token, String title, String body) {
+        new Thread(() -> {
+            try {
+                System.out.println("sending new message");
+                URL url = new URL("https://pushnotificationservice-cpfffxhfdygvhzf7.swedencentral-01.azurewebsites.net/api/notifications/send");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+                String params = "token=" + token + "&title=" + title + "&body=" + body;
+
+                OutputStream os = conn.getOutputStream();
+                os.write(params.getBytes());
+                os.flush();
+                os.close();
+
+                int responseCode = conn.getResponseCode();
+                Log.d("PushNotif", "Backend responded with code: " + responseCode);
+            } catch (Exception e) {
+                Log.e("PushNotif", "Error sending push notification", e);
+            }
+        }).start();
+    }
+
+    private String getOtherUserIdFromChatId(String chatId, String myUserId) {
+        String[] parts = chatId.split("_");
+        if (parts.length != 2) return "";
+        return parts[0].equals(myUserId) ? parts[1] : parts[0];
+>>>>>>> Stashed changes
     }
 
     private void listenForMessages(String chatId) {
@@ -173,6 +236,7 @@ public class ChatActivity extends AppCompatActivity {
         return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
     }
 
+<<<<<<< Updated upstream
     // Уведомление пока не используется — закомментировано
     /*
     private void showNotification(String messageText) {
@@ -201,6 +265,8 @@ public class ChatActivity extends AppCompatActivity {
     }
     */
 
+=======
+>>>>>>> Stashed changes
     private static class ChatMessage {
         private String message;
         private String senderId;

@@ -84,12 +84,6 @@ public class ChatListActivity extends AppCompatActivity {
             return true;
         });
 
-//        adapter = new ChatAdapter(filteredList, chat -> {
-//            Intent intent = new Intent(ChatListActivity.this, ChatActivity.class);
-//            intent.putExtra("chatId", chat.getChatId());
-//            intent.putExtra("userId", chat.getUserId());
-//            startActivity(intent);
-//        });
         adapter = new ChatAdapter(filteredList, chat -> {
             String currentUserId = currentUser.getUid();
             String otherUserId = chat.getUserId();

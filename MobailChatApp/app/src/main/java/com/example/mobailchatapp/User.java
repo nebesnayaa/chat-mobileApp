@@ -4,6 +4,8 @@ public class User {
     private String userId;
     private String name;
 
+    private String fcmToken;
+
     public User() {}
 
     public User(String userId, String name) {
@@ -25,5 +27,13 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }
