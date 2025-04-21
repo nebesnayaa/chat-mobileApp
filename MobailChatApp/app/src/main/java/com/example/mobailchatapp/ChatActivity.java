@@ -39,7 +39,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.functions.FirebaseFunctions;
+//import com.google.firebase.functions.FirebaseFunctions;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -68,10 +68,28 @@ public class ChatActivity extends AppCompatActivity {
         scrollView = findViewById(R.id.messages_scroll_view);
 
         chatId = getIntent().getStringExtra("chatId");
-        username = getIntent().getStringExtra("username");
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        usernameTextView.setText(username); // Имя собеседника в навбаре
+        String[] userIds = chatId.split("_");
+        String otherUserId = userIds[0].equals(currentUserId) ? userIds[1] : userIds[0];
+
+        // Отримуємо ім’я іншого користувача
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(otherUserId);
+        userRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DataSnapshot snapshot = task.getResult();
+                if (snapshot.exists()) {
+                    String name = snapshot.child("name").getValue(String.class);
+                    usernameTextView.setText(name);
+                } else {
+                    usernameTextView.setText("Unknown");
+                }
+            } else {
+                Toast.makeText(ChatActivity.this, "Failed to load user name", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+//        usernameTextView.setText(username); // Имя собеседника в навбаре
 
         listenForMessages(chatId);
 

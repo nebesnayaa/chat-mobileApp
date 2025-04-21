@@ -186,62 +186,62 @@ public class ChatListActivity extends AppCompatActivity {
     private void loadUserChats() {
         String currentUserId = currentUser.getUid();
         dbRef.child("userChats").child(currentUserId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        chatList.clear();
-                        filteredList.clear();
-                        for (DataSnapshot chatSnap : snapshot.getChildren()) {
-                            String chatId = chatSnap.getKey();
-                            dbRef.child("chats").child(chatId)
-                                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                                        @Override
-                                        public void onDataChange(@NonNull DataSnapshot chatData) {
-                                            Chat chat = chatData.getValue(Chat.class);
-                                            if (chat != null) {
-                                                chat.setChatId(chatId);
-                                                String otherUserId = getOtherUserId(chatId);
-                                                User user = allUsers.get(otherUserId);
-                                                if (user != null) chat.setName(user.getName());
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    chatList.clear();
+                    filteredList.clear();
+                    for (DataSnapshot chatSnap : snapshot.getChildren()) {
+                        String chatId = chatSnap.getKey();
+                        dbRef.child("chats").child(chatId)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot chatData) {
+                                        Chat chat = chatData.getValue(Chat.class);
+                                        if (chat != null) {
+                                            chat.setChatId(chatId);
+                                            String otherUserId = getOtherUserId(chatId);
+                                            User user = allUsers.get(otherUserId);
+                                            if (user != null) chat.setName(user.getName());
 
-                                                // Подгружаем последнее сообщение
-                                                dbRef.child("messages")
-                                                        .child(chatId)
-                                                        .limitToLast(1) // Берем только последнее сообщение
-                                                        .addListenerForSingleValueEvent(new ValueEventListener() {
-                                                            @Override
-                                                            public void onDataChange(@NonNull DataSnapshot messageSnap) {
-                                                                if (messageSnap.exists()) {
-                                                                    String lastMessage = messageSnap.getChildren().iterator().next().child("message").getValue(String.class);
-                                                                    chat.setLastMessage(lastMessage != null ? lastMessage : "Нет сообщений");
-                                                                } else {
-                                                                    chat.setLastMessage("Нет сообщений");
-                                                                }
-                                                                chatList.add(chat);
-                                                                filteredList.add(chat);
-                                                                adapter.notifyDataSetChanged();
+                                            // Подгружаем последнее сообщение
+                                            dbRef.child("messages")
+                                                    .child(chatId)
+                                                    .limitToLast(1) // Берем только последнее сообщение
+                                                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                                                        @Override
+                                                        public void onDataChange(@NonNull DataSnapshot messageSnap) {
+                                                            if (messageSnap.exists()) {
+                                                                String lastMessage = messageSnap.getChildren().iterator().next().child("message").getValue(String.class);
+                                                                chat.setLastMessage(lastMessage != null ? lastMessage : "Нет сообщений");
+                                                            } else {
+                                                                chat.setLastMessage("Нет сообщений");
                                                             }
+                                                            chatList.add(chat);
+                                                            filteredList.add(chat);
+                                                            adapter.notifyDataSetChanged();
+                                                        }
 
-                                                            @Override
-                                                            public void onCancelled(@NonNull DatabaseError error) {
-                                                                chat.setLastMessage("Не удалось загрузить сообщение");
-                                                                chatList.add(chat);
-                                                                filteredList.add(chat);
-                                                                adapter.notifyDataSetChanged();
-                                                            }
-                                                        });
-                                            }
+                                                        @Override
+                                                        public void onCancelled(@NonNull DatabaseError error) {
+                                                            chat.setLastMessage("Не удалось загрузить сообщение");
+                                                            chatList.add(chat);
+                                                            filteredList.add(chat);
+                                                            adapter.notifyDataSetChanged();
+                                                        }
+                                                    });
                                         }
+                                    }
 
-                                        @Override
-                                        public void onCancelled(@NonNull DatabaseError error) {}
-                                    });
-                        }
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError error) {}
+                                });
                     }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {}
-                });
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {}
+            });
     }
     @Override
     protected void onResume(){
